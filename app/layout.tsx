@@ -6,12 +6,15 @@ import { siteConfig } from "@/config/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
-  title: {
-    default: siteConfig.name,
-    template: `%s | ${siteConfig.name}`,
+  metadataBase: new URL(process.env.SITE_URL ?? "https://gallery.buyoungsilcoding.com"),
+  title: "엄마의 그림 갤러리",
+  description: "유화로 담은 풍경, 엄마의 그림을 모았습니다.",
+  openGraph: {
+    title: "엄마의 그림 갤러리",
+    description: "유화로 담은 풍경, 엄마의 그림을 모았습니다.",
+    type: "website",
+    locale: "ko_KR",
   },
-  description: siteConfig.description,
 };
 
 // 화면이 그려지기 전에 저장된 테마를 적용해서, 밝은 화면이 번쩍 보이는 걸 막아요
