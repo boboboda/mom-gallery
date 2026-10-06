@@ -31,7 +31,7 @@ services:
     volumes:
       - uploads:/app/uploads
     ports:
-      - "127.0.0.1:3100:3000" # 서버 안에서만 접근. 포트가 겹치면 앞의 3100 만 바꾸세요
+      - "${APP_BIND:-127.0.0.1}:3100:3000" # 서버 안에서만 접근. 포트가 겹치면 앞의 3100 만 바꾸세요
     healthcheck:
       test:
         - CMD
