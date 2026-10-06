@@ -7,6 +7,18 @@
   --line: #d3d2cc;
   --accent: #34445f;
   --mat: #fbfbf9;
+  --on-mat: #1c1c1a;
+}
+
+/* 다크 모드는 기기 설정이 아니라 버튼으로 켜요 (html 에 data-theme="dark") */
+:root[data-theme="dark"] {
+  --background: #151514;
+  --foreground: #e9e8e4;
+  --muted: #9c9b95;
+  --line: #2b2b29;
+  --accent: #aab8d4;
+  --mat: #e9e8e3;
+  --on-mat: #1c1c1a;
 }
 
 @theme inline {
@@ -27,17 +39,6 @@
     0 1px 2px rgb(0 0 0 / 0.06), 0 16px 28px -18px rgb(0 0 0 / 0.3);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #151514;
-    --foreground: #e9e8e4;
-    --muted: #9c9b95;
-    --line: #2b2b29;
-    --accent: #aab8d4;
-    --mat: #e9e8e3;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
@@ -45,6 +46,13 @@ body {
   font-family:
     ui-sans-serif, system-ui, -apple-system, "Apple SD Gothic Neo",
     "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+
+/* 액자 속지(mat)는 다크 모드에서도 밝아서, 안의 글씨는 항상 어두운 색이어야 해요 */
+@layer components {
+  .bg-mat {
+    color: var(--on-mat);
+  }
 }
 
 /* 메인 슬라이더 */
