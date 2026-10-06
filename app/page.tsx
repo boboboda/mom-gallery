@@ -1,69 +1,120 @@
-import Image from "next/image";
+import Link from "next/link";
+import ArtworkImage from "@/components/ArtworkImage";
+import { listArtworks, listCategories } from "@/lib/artworks";
+import { parseId } from "@/lib/http";
 
-export default function Home() {
+// 목업 단계에서는 항상 DB에서 읽어요. (나중에 ISR로 바꾸면 집 서버가 꺼져도 페이지가 열려요)
+export const dynamic = "force-dynamic";
+
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function HomePage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const categoryRaw = Array.isArray(sp.category) ? sp.category[0] : sp.category;
+  const categoryId = categoryRaw ? (parseId(categoryRaw) ?? undefined) : undefined;
+
+  const [categories, artworks, featured] = await Promise.all([
+    listCategories(),
+    listArtworks({ categoryId }),
+    categoryId === undefined ? listArtworks({ featured: true }) : Promise.resolve([]),
+  ]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main className="mx-auto max-w-6xl px-4 py-8">
+      {featured.length > 0 && (
+        <section aria-labelledby="featured-title" className="mb-10">
+          <h2 id="featured-title" className="mb-3 text-sm font-medium text-muted">
+            대표 작품
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {featured.slice(0, 4).map((art, i) => (
+              <Link
+                key={art.id}
+                href={`/artworks/${art.id}`}
+                className="group relative block aspect-[4/5] overflow-hidden rounded-lg bg-line"
+              >
+                <ArtworkImage
+                  src={art.imageUrl}
+                  alt={art.title}
+                  width={art.imageWidth}
+                  height={art.imageHeight}
+                  sizes="(min-width: 640px) 25vw, 50vw"
+                  priority={i < 2}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-sm font-medium text-white">
+                  {art.title}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <nav aria-label="카테고리" className="mb-6 flex flex-wrap gap-2">
+        <FilterChip href="/" active={categoryId === undefined} label="전체" />
+        {categories.map((category) => (
+          <FilterChip
+            key={category.id}
+            href={`/?category=${category.id}`}
+            active={categoryId === category.id}
+            label={`${category.name} ${category.artworkCount}`}
+          />
+        ))}
+      </nav>
+
+      {artworks.length === 0 ? (
+        <p className="py-20 text-center text-muted">등록된 작품이 없어요.</p>
+      ) : (
+        <ul className="columns-2 gap-4 md:columns-3 lg:columns-4">
+          {artworks.map((art) => (
+            <li key={art.id} className="mb-4 break-inside-avoid">
+              <Link href={`/artworks/${art.id}`} className="group block">
+                <div className="overflow-hidden rounded-lg bg-line">
+                  <ArtworkImage
+                    src={art.imageUrl}
+                    alt={art.title}
+                    width={art.imageWidth}
+                    height={art.imageHeight}
+                    className="h-auto w-full transition-transform duration-300 group-hover:scale-105"
+                  />
+                </div>
+                <p className="mt-2 text-sm font-medium">{art.title}</p>
+                <p className="text-xs text-muted">
+                  {[art.medium, art.year].filter(Boolean).join(" · ")}
+                </p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  );
+}
+
+function FilterChip({
+  href,
+  active,
+  label,
+}: {
+  href: string;
+  active: boolean;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={
+        "rounded-full border px-3 py-1.5 text-sm transition-colors " +
+        (active
+          ? "border-foreground bg-foreground text-background"
+          : "border-line text-muted hover:border-foreground hover:text-foreground")
+      }
+    >
+      {label}
+    </Link>
   );
 }

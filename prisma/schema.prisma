@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Artwork {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String   @default("")
+  imageUrl    String
+  imageWidth  Int?
+  imageHeight Int?
+  year        Int?
+  medium      String   @default("")
+  size        String   @default("")
+  featured    Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category    Category? @relation(fields: [categoryId], references: [id])
+  categoryId  Int?
+
+  @@index([categoryId])
+  @@index([featured, sortOrder])
+}
+
+model Category {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  sortOrder Int       @default(0)
+  artworks  Artwork[]
+}
+
+model AdminUser {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+
+enum InquiryKind {
+  PURCHASE   // 작품 구매
+  COMMISSION // 그림 주문
+  OTHER      // 기타
+}
+
+model Inquiry {
+  id           Int         @id @default(autoincrement())
+  kind         InquiryKind
+  name         String
+  contact      String // 전화번호 또는 이메일
+  message      String
+  artworkId    Int? // 관련 작품 (없을 수도 있어요)
+  artworkTitle String      @default("") // 작품이 지워져도 알 수 있게 제목도 같이 저장
+  handled      Boolean     @default(false) // 확인한 문의인지
+  createdAt    DateTime    @default(now())
+
+  @@index([handled, createdAt])
+}

@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?.env 에 POSTGRES_USER 가 필요해요}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?.env 에 POSTGRES_PASSWORD 가 필요해요}
+      POSTGRES_DB: ${POSTGRES_DB:?.env 에 POSTGRES_DB 가 필요해요}
+    # 서버용에는 ports 가 없어요 (DB 를 밖으로 열지 않아요)
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      args:
+        SITE_URL: ${SITE_URL:?.env 에 SITE_URL 을 넣어주세요}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      SITE_URL: ${SITE_URL}
+      SESSION_SECRET: ${SESSION_SECRET:?.env 에 SESSION_SECRET 을 넣어주세요}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - "127.0.0.1:3100:3000" # 서버 안에서만 접근. 포트가 겹치면 앞의 3100 만 바꾸세요
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/v1/categories').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # 필요할 때만 실행하는 도구: 마이그레이션, 관리자 계정 만들기
+  migrate:
+    build:
+      context: .
+      target: builder
+      args:
+        SITE_URL: ${SITE_URL:?.env 에 SITE_URL 을 넣어주세요}
+    profiles: ["tools"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+    command: ["npx", "prisma", "migrate", "deploy"]
+
+volumes:
+  db-data:
+  uploads:

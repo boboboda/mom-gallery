@@ -1,0 +1,17 @@
+.git
+.next
+node_modules
+generated
+uploads
+
+.env
+.env.*
+!.env.example
+
+docs
+*.md
+.vscode
+.DS_Store
+tsconfig.tsbuildinfo
+
+서버배포자료.md

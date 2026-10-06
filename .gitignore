@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/generated
+# 관리자가 올린 사진
+/uploads
+
+서버배포자료.md
